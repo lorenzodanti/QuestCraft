@@ -1,0 +1,10 @@
+{
+  "playerName": "Eroe",
+  "playerHealth": 87,
+  "playerMaxHealth": 100,
+  "playerAttackPower": 20,
+  "playerLevel": 1,
+  "playerExperience": 85,
+  "playerRow": 4,
+  "playerCol": 4
+}

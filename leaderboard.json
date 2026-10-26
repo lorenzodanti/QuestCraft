@@ -1,0 +1,44 @@
+[
+  {
+    "playerName": "lion",
+    "score": 474,
+    "monstersDefeated": 2,
+    "levelReached": 2
+  },
+  {
+    "playerName": "ddd",
+    "score": 407,
+    "monstersDefeated": 3,
+    "levelReached": 2
+  },
+  {
+    "playerName": "ddf",
+    "score": 364,
+    "monstersDefeated": 1,
+    "levelReached": 2
+  },
+  {
+    "playerName": "abe",
+    "score": 364,
+    "monstersDefeated": 1,
+    "levelReached": 2
+  },
+  {
+    "playerName": "hhh",
+    "score": 364,
+    "monstersDefeated": 1,
+    "levelReached": 2
+  },
+  {
+    "playerName": "ah",
+    "score": 110,
+    "monstersDefeated": 1,
+    "levelReached": 1
+  },
+  {
+    "playerName": "aaa",
+    "score": 75,
+    "monstersDefeated": 1,
+    "levelReached": 1
+  }
+]
