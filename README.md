@@ -26,7 +26,7 @@ Anno accademico: 2025/26 - Università di Camerino
 ## 🛠️ Tecnologie utilizzate
 
 ---
--  **Java 17+** (LTS)
+-  **Java 17 / JDK 25** (LTS)
 -  **JavaFX** (UI, Layouts, Custom Event Filtering)
 -  **Gson** (Serializzazione e deserializzazione JSON)
 -  **Gradle** (Gestione delle dipendenze e build automation)
@@ -36,13 +36,14 @@ Anno accademico: 2025/26 - Università di Camerino
 
 ---
 ### Prerequisiti
-- **JDK 17+**
+- **JDK 17+ JDK 25**
 - **Gradle**
 
 ### 1 - Istruzioni
 ```bash
 git clone https://github.com/lorenzodanti/QuestCraft.git
 cd QuestCraft
+```
 
 ### 2 - Build del progetto
 ```bash
