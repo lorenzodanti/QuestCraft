@@ -15,6 +15,11 @@ import it.unicam.cs.mpgc.rpg126280.persistence.LeaderboardManager;
 
 import java.io.IOException;
 
+/**
+ * Controller principale del gioco.
+ * Coordina lo stato della partita, il movimento sulla mappa, la gestione dell'inventario,
+ * le meccaniche di combattimento in tempo reale e la persistenza dei dati.
+ */
 public class GameController {
     private Player player;
     private GameMap map;
@@ -26,12 +31,27 @@ public class GameController {
     private boolean isDefending;
     private int monstersDefeatedCount;
 
+    /**
+     * Costruisce un nuovo GameController e avvia una nuova partita.
+     *
+     * @param playerName Nome dell'eroe scelto dal giocatore.
+     * @param mapRows    Numero di righe della mappa di gioco.
+     * @param mapCols    Numero di colonne della mappa di gioco.
+     */
     public GameController(String playerName, int mapRows, int mapCols) {
         this.saveManager = new JsonSaveManager();
         this.leaderboardManager = new LeaderboardManager();
         initGame(playerName, mapRows, mapCols);
     }
 
+    /**
+     * Inizializza o resetta lo stato del gioco, posizionando il giocatore,
+     * popolando l'inventario iniziale e generando i nemici sulla mappa.
+     *
+     * @param playerName Nome del giocatore.
+     * @param mapRows    Numero di righe della mappa.
+     * @param mapCols    Numero di colonne della mappa.
+     */
     public void initGame(String playerName, int mapRows, int mapCols) {
         this.player = new Player(playerName, 100, 30);
         this.map = new GameMap(mapRows, mapCols);
@@ -47,19 +67,22 @@ public class GameController {
         this.isDefending = false;
         this.monstersDefeatedCount = 0;
 
+        // Posizionamento dei mostri sulla griglia
         this.map.placeEntity(MonsterFactory.createGoblin(), new Position(1, 2));
         this.map.placeEntity(MonsterFactory.createOrc(), new Position(3, 1));
         this.map.placeEntity(new Monster("Drago", 60, 18, 150), new Position(4, 3));
     }
 
     /**
-     * Tenta di usare una pozione dall'inventario.
+     * Tenta di usare una pozione curativa dall'inventario per ripristinare i PV del giocatore.
+     *
+     * @return Messaggio descrittivo sull'esito dell'utilizzo della pozione.
      */
     public String usePotion() {
         if (!player.isAlive()) return "Sei stato sconfitto!";
         if (player.getHealth() >= player.getMaxHealth()) return "Salute già al massimo!";
 
-        // Cerca una pozione nell'inventario
+        // Cerca la prima pozione disponibile nell'inventario
         for (Item item : inventory.getItems()) {
             if (item instanceof HealthPotion) {
                 if (inventory.useItem(item, player)) {
@@ -70,6 +93,11 @@ public class GameController {
         return "⚠️ Nessuna pozione disponibile nell'inventario!";
     }
 
+    /**
+     * Conta il numero di pozioni curative attualmente presenti nell'inventario.
+     *
+     * @return Quantità di {@link HealthPotion} disponibili.
+     */
     public int getPotionCount() {
         int count = 0;
         for (Item item : inventory.getItems()) {
@@ -78,10 +106,22 @@ public class GameController {
         return count;
     }
 
+    /**
+     * Verifica se il giocatore ha raggiunto la casella traguardo in basso a destra.
+     *
+     * @return {@code true} se il giocatore si trova sulla cella finale, {@code false} altrimenti.
+     */
     public boolean checkVictory() {
         return playerPosition.getRow() == map.getRows() - 1 && playerPosition.getCol() == map.getCols() - 1;
     }
 
+    /**
+     * Gestisce lo spostamento del giocatore nella direzione indicata,
+     * rilevando eventuali collisioni con i bordi, incontri con mostri o il raggiungimento della meta.
+     *
+     * @param direction Direzione di movimento scelta.
+     * @return Codice o messaggio di stato ("COMBAT_START", "VICTORY", oppure descrizione del movimento).
+     */
     public String movePlayer(Direction direction) {
         if (currentEncounter != null) return "Sei in combattimento!";
 
@@ -93,6 +133,7 @@ public class GameController {
 
         var targetEntity = map.getEntityAt(newPos);
 
+        // Avvia lo scontro se la casella di destinazione è occupata da un mostro
         if (targetEntity instanceof Monster monster) {
             this.currentEncounter = monster;
             return "COMBAT_START";
@@ -110,6 +151,13 @@ public class GameController {
         return "Ti sei mosso verso " + direction;
     }
 
+    /**
+     * Esegue l'attacco del giocatore contro il mostro attualmente affrontato.
+     * Se il mostro viene sconfitto, lo rimuove dalla mappa e assegna l'esperienza;
+     * altrimenti scatena immediatamente la risposta del mostro.
+     *
+     * @return Esito dello scontro o descrizione dell'attacco nemico.
+     */
     public String playerAttack() {
         if (currentEncounter == null) return "";
         player.attack(currentEncounter);
@@ -124,12 +172,24 @@ public class GameController {
         return monsterTurn();
     }
 
+    /**
+     * Attiva la postura difensiva del giocatore, dimezzando il danno del prossimo attacco nemico.
+     *
+     * @return Risultato dell'attacco successivo del mostro.
+     */
     public String playerDefend() {
         if (currentEncounter == null) return "";
         this.isDefending = true;
         return monsterTurn();
     }
 
+    /**
+     * Esegue l'attacco del mostro contro il giocatore.
+     * Viene chiamato sia in risposta alle mosse del giocatore sia dal timer automatico
+     * del combattimento in tempo reale.
+     *
+     * @return "GAME_OVER" se i PV del giocatore scendono a 0, altrimenti il log del danno inflitto.
+     */
     public String monsterTurn() {
         int damage = currentEncounter.getAttackPower();
         if (isDefending) {
@@ -144,11 +204,20 @@ public class GameController {
         return currentEncounter.getName() + " ti attacca infliggendo " + damage + " danni!";
     }
 
+    /**
+     * Calcola il punteggio finale della partita in base ai mostri sconfitti,
+     * all'esperienza accumulata e ai PV rimanenti, salvandolo nella classifica.
+     */
     public void recordFinalScore() {
         int finalScore = (monstersDefeatedCount * 50) + player.getExperience() + (player.getHealth() * 2);
         leaderboardManager.addScore(player.getName(), finalScore, monstersDefeatedCount, player.getLevel());
     }
 
+    /**
+     * Individua la direzione adiacente al giocatore in cui si trova il mostro attualmente affrontato.
+     *
+     * @return La {@link Direction} in cui si trova il nemico.
+     */
     private Direction getEncounterDirection() {
         for (Direction d : Direction.values()) {
             Position check = playerPosition.move(d);
@@ -157,6 +226,12 @@ public class GameController {
         return Direction.RIGHT;
     }
 
+    /**
+     * Salva lo stato corrente della partita su un file JSON.
+     *
+     * @param filePath Percorso del file di destinazione.
+     * @throws IOException Se si verifica un errore durante la scrittura su disco.
+     */
     public void saveGame(String filePath) throws IOException {
         GameState state = new GameState(
                 player.getName(), player.getHealth(), player.getMaxHealth(),

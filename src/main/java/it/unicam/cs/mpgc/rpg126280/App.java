@@ -26,6 +26,11 @@ import javafx.util.Duration;
 
 import java.util.List;
 
+/**
+ * Classe principale dell'applicazione JavaFX (View nell'architettura MVC).
+ * Gestisce le schermate di gioco (Menu iniziale, Griglia di esplorazione,
+ * Combattimento modale in tempo reale e Classifica) delegando la logica al {@link GameController}.
+ */
 public class App extends Application {
 
     private GameController controller;
@@ -42,6 +47,10 @@ public class App extends Application {
         showStartMenu();
     }
 
+    /**
+     * Costruisce e mostra la schermata iniziale per l'inserimento del nome dell'eroe,
+     * l'avvio di una nuova partita o la consultazione della classifica.
+     */
     private void showStartMenu() {
         VBox root = new VBox(12);
         root.setAlignment(Pos.CENTER);
@@ -91,6 +100,10 @@ public class App extends Application {
         mainStage.show();
     }
 
+    /**
+     * Inizializza la schermata principale di esplorazione con la mappa a griglia
+     * al centro e il pannello delle statistiche, registro eventi e inventario a destra.
+     */
     private void showGameScene() {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(15));
@@ -139,13 +152,18 @@ public class App extends Application {
 
         Scene scene = new Scene(root, 700, 500);
 
-        // Intercetta i tasti della tastiera
+        // Intercetta i tasti direzionali e WASD della tastiera per il movimento
         scene.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPress);
 
         mainStage.setTitle("QuestCraft RPG - Partita in corso");
         mainStage.setScene(scene);
     }
 
+    /**
+     * Traduce la pressione dei tasti direzionali o WASD nella corrispondente {@link Direction}.
+     *
+     * @param event Evento tastiera intercettato dalla scena.
+     */
     private void handleKeyPress(KeyEvent event) {
         Direction dir = null;
         switch (event.getCode()) {
@@ -161,6 +179,12 @@ public class App extends Application {
         }
     }
 
+    /**
+     * Richiede al controller lo spostamento del giocatore e gestisce l'apertura
+     * dello scontro o della schermata di vittoria in base al risultato.
+     *
+     * @param direction Direzione verso cui muovere l'eroe.
+     */
     private void handleMove(Direction direction) {
         String result = controller.movePlayer(direction);
 
@@ -174,6 +198,11 @@ public class App extends Application {
         updateUI();
     }
 
+    /**
+     * Apre una finestra modale per gestire il combattimento in tempo reale.
+     * Mostra le immagini e le barre della vita dinamiche di entrambi i combattenti e avvia
+     * una {@link Timeline} che fa attaccare il nemico automaticamente ogni 1.5 secondi.
+     */
     private void showBattleDialog() {
         Player player = controller.getPlayer();
         Monster monster = controller.getCurrentEncounter();
@@ -235,9 +264,10 @@ public class App extends Application {
         btnDefend.setStyle("-fx-background-color: #89b4fa; -fx-font-weight: bold; -fx-cursor: hand;");
         btnDefend.setPrefWidth(190);
 
-        // Flag per sapere se lo scontro è terminato con la sconfitta del player
+        // Flag per tracciare se lo scontro è terminato con la sconfitta del giocatore
         final boolean[] isGameOver = {false};
 
+        // Aggiorna le ProgressBar e le etichette dei PV sia nella finestra di battaglia che nella UI principale
         Runnable refreshBattleUI = () -> {
             int pHp = Math.max(0, player.getHealth());
             playerHpBar.setProgress((double) pHp / player.getMaxHealth());
@@ -250,7 +280,7 @@ public class App extends Application {
             updateUI();
         };
 
-        // Timer automatico: ogni 1.5 secondi il mostro attacca se non fai nulla
+        // Ciclo di attacco automatico del nemico: infligge danni ogni 1.5 secondi se il giocatore non agisce
         Timeline autoAttackTimer = new Timeline();
         autoAttackTimer.getKeyFrames().add(new KeyFrame(Duration.seconds(1.5), e -> {
             String res = controller.monsterTurn();
@@ -297,6 +327,7 @@ public class App extends Application {
             }
         });
 
+        // Impedisce la chiusura manuale della finestra con la X per evitare di fuggire dallo scontro
         battleStage.setOnCloseRequest(e -> e.consume());
 
         layout.getChildren().addAll(fightersBox, battleLog, btnAttack, btnDefend);
@@ -305,18 +336,25 @@ public class App extends Application {
         battleStage.showAndWait();
         autoAttackTimer.stop();
 
-        // Subito dopo la chiusura pulita della finestra di battaglia, mostra la schermata di sconfitta
+        // Mostra la finestra di Game Over solo dopo la chiusura pulita della finestra modale di battaglia
         if (isGameOver[0] || !player.isAlive()) {
             Platform.runLater(() -> showEndGameDialog(false));
         }
     }
 
+    /**
+     * Mostra la finestra di fine partita (Vittoria o Sconfitta) offrendo la possibilità
+     * di rigiocare, tornare al menu con classifica oppure uscire.
+     *
+     * @param victory {@code true} se il giocatore ha vinto, {@code false} in caso di sconfitta.
+     */
     private void showEndGameDialog(boolean victory) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle(victory ? "🎉 VITTORIA!" : "☠️ SCONFITTA!");
         alert.setHeaderText(victory ? "Complimenti! Hai raggiunto la fine del Dungeon!" : "Sei stato sconfitto nel Dungeon!");
         alert.setContentText("Punteggio registrato in Classifica! Cosa vuoi fare?");
 
+        // Imposta lo stesso ButtonData per garantire una spaziatura uniforme tra tutti i pulsanti
         ButtonType btnReplay = new ButtonType("🔄 Rigioca", ButtonBar.ButtonData.OTHER);
         ButtonType btnMenu = new ButtonType("🏆 Classifica / Menu", ButtonBar.ButtonData.OTHER);
         ButtonType btnExit = new ButtonType("🚪 Esci", ButtonBar.ButtonData.OTHER);
@@ -336,6 +374,9 @@ public class App extends Application {
         });
     }
 
+    /**
+     * Apre una finestra modale che visualizza la classifica dei punteggi salvati.
+     */
     private void showLeaderboardDialog() {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
@@ -372,12 +413,21 @@ public class App extends Application {
         stage.showAndWait();
     }
 
+    /**
+     * Gestisce la pressione del pulsante per utilizzare una pozione curativa.
+     */
     private void handleUsePotion() {
         String res = controller.usePotion();
         logArea.appendText(res + "\n");
         updateUI();
     }
 
+    /**
+     * Carica un'immagine dalle risorse dell'applicazione ridimensionandola per le celle della mappa.
+     *
+     * @param imagePath Percorso della risorsa immagine (es. {@code "/images/player.png"}).
+     * @return {@link ImageView} configurato, oppure {@code null} se la risorsa non è disponibile.
+     */
     private ImageView createTileImage(String imagePath) {
         try {
             InputStream stream = getClass().getResourceAsStream(imagePath);
@@ -386,18 +436,22 @@ public class App extends Application {
                 return new ImageView(img);
             }
         } catch (Exception e) {
-            // Fallback in caso l'immagine non venga trovata
+            // Fallback testuale gestito dal chiamante in caso l'immagine non venga trovata
         }
         return null;
     }
 
+    /**
+     * Aggiorna tutti gli elementi grafici della schermata principale (statistiche,
+     * barra della vita, pulsante pozioni e renderizzazione delle celle della mappa).
+     */
     private void updateUI() {
         Player p = controller.getPlayer();
         statsLabel.setText(String.format("👤 %s  | 🎖️ Liv: %d\n⚔️ ATK: %d | ⭐ EXP: %d",
                 p.getName(), p.getLevel(), p.getAttackPower(), p.getExperience()));
         healthBar.setProgress(Math.max(0, (double) p.getHealth() / p.getMaxHealth()));
 
-        // Aggiorna lo stato del pulsante pozioni
+        // Aggiorna lo stato e lo stile del pulsante pozioni in base alla disponibilità
         int count = controller.getPotionCount();
         potionButton.setText("🧪 Usa Pozione (" + count + " rimaste)");
         if (count == 0) {
@@ -419,7 +473,7 @@ public class App extends Application {
                 var entity = controller.getMap().getEntityAt(pos);
 
                 if (pos.equals(controller.getPlayerPosition())) {
-                    // Celle Giocatore
+                    // Cella Giocatore
                     cell.setStyle("-fx-background-color: #2e4438; -fx-background-radius: 8px; -fx-border-color: #a6e3a1; -fx-border-radius: 8px;");
                     ImageView imgView = createTileImage("/images/player.png");
                     if (imgView != null) {

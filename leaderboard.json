@@ -96,10 +96,34 @@
     "levelReached": 2
   },
   {
+    "playerName": "ddd",
+    "score": 328,
+    "monstersDefeated": 1,
+    "levelReached": 2
+  },
+  {
     "playerName": "aaa",
     "score": 292,
     "monstersDefeated": 1,
     "levelReached": 2
+  },
+  {
+    "playerName": "ddd",
+    "score": 292,
+    "monstersDefeated": 1,
+    "levelReached": 2
+  },
+  {
+    "playerName": "ddd",
+    "score": 275,
+    "monstersDefeated": 1,
+    "levelReached": 1
+  },
+  {
+    "playerName": "ffff",
+    "score": 221,
+    "monstersDefeated": 2,
+    "levelReached": 1
   },
   {
     "playerName": "aaaaa",
@@ -175,6 +199,18 @@
   },
   {
     "playerName": "sss",
+    "score": 0,
+    "monstersDefeated": 0,
+    "levelReached": 1
+  },
+  {
+    "playerName": "kkk",
+    "score": 0,
+    "monstersDefeated": 0,
+    "levelReached": 1
+  },
+  {
+    "playerName": "kkk",
     "score": 0,
     "monstersDefeated": 0,
     "levelReached": 1
