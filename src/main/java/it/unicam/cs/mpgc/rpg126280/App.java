@@ -20,6 +20,9 @@ import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.InputStream;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 
 import java.util.List;
 
@@ -45,7 +48,7 @@ public class App extends Application {
         root.setPadding(new Insets(30));
         root.setStyle("-fx-background-color: #1e1e2e;");
 
-        Label title = new Label("⚔️ QUEST CRAFT ⚔️");
+        Label title = new Label("\u2694 QUEST CRAFT \u2694");
         title.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f5c2e7;");
 
         TextField nameInput = new TextField();
@@ -172,61 +175,140 @@ public class App extends Application {
     }
 
     private void showBattleDialog() {
+        Player player = controller.getPlayer();
         Monster monster = controller.getCurrentEncounter();
+
         Stage battleStage = new Stage();
         battleStage.initModality(Modality.APPLICATION_MODAL);
         battleStage.initOwner(mainStage);
-        battleStage.setTitle("⚔️ COMBATTIMENTO!");
+        battleStage.setTitle("⚔️ COMBATTIMENTO IN TEMPO REALE!");
 
-        VBox layout = new VBox(12);
+        VBox layout = new VBox(15);
         layout.setAlignment(Pos.CENTER);
         layout.setPadding(new Insets(20));
         layout.setStyle("-fx-background-color: #181825;");
 
-        Label battleInfo = new Label("Scontro con: " + monster.getName() + " (PV: " + monster.getHealth() + ")");
-        battleInfo.setStyle("-fx-text-fill: #f38ba8; -fx-font-weight: bold; -fx-font-size: 15px;");
+        // --- BOX PLAYER (Sinistra) ---
+        ImageView playerImg = createTileImage("/images/player.png");
+        Label playerNameLabel = new Label("🧙‍♂️ " + player.getName());
+        playerNameLabel.setStyle("-fx-text-fill: #a6e3a1; -fx-font-weight: bold; -fx-font-size: 14px;");
+        Label playerHpLabel = new Label("PV: " + player.getHealth() + " / " + player.getMaxHealth());
+        playerHpLabel.setStyle("-fx-text-fill: #cdd6f4;");
+        ProgressBar playerHpBar = new ProgressBar((double) player.getHealth() / player.getMaxHealth());
+        playerHpBar.setPrefWidth(150);
+        playerHpBar.setStyle("-fx-accent: #a6e3a1;");
 
-        Label battleLog = new Label("Scegli la tua mossa...");
-        battleLog.setStyle("-fx-text-fill: #cdd6f4;");
+        VBox playerBox = new VBox(8);
+        playerBox.setAlignment(Pos.CENTER);
+        if (playerImg != null) playerBox.getChildren().add(playerImg);
+        playerBox.getChildren().addAll(playerNameLabel, playerHpBar, playerHpLabel);
+
+        // --- BOX MOSTRO (Destra) ---
+        String monsterImgPath = monster.getName().equalsIgnoreCase("Drago") ? "/images/dragon.png"
+                : monster.getName().equalsIgnoreCase("Orco") ? "/images/orco.png" : "/images/goblin.png";
+        ImageView monsterImg = createTileImage(monsterImgPath);
+        Label monsterNameLabel = new Label("👹 " + monster.getName());
+        monsterNameLabel.setStyle("-fx-text-fill: #f38ba8; -fx-font-weight: bold; -fx-font-size: 14px;");
+        Label monsterHpLabel = new Label("PV: " + monster.getHealth() + " / " + monster.getMaxHealth());
+        monsterHpLabel.setStyle("-fx-text-fill: #cdd6f4;");
+        ProgressBar monsterHpBar = new ProgressBar((double) monster.getHealth() / monster.getMaxHealth());
+        monsterHpBar.setPrefWidth(150);
+        monsterHpBar.setStyle("-fx-accent: #f38ba8;");
+
+        VBox monsterBox = new VBox(8);
+        monsterBox.setAlignment(Pos.CENTER);
+        if (monsterImg != null) monsterBox.getChildren().add(monsterImg);
+        monsterBox.getChildren().addAll(monsterNameLabel, monsterHpBar, monsterHpLabel);
+
+        // Affianca Player e Mostro
+        HBox fightersBox = new HBox(35, playerBox, monsterBox);
+        fightersBox.setAlignment(Pos.CENTER);
+
+        Label battleLog = new Label("⚠️ Il mostro ti sta attaccando! Agisci in fretta!");
+        battleLog.setStyle("-fx-text-fill: #f9e2af; -fx-font-weight: bold;");
 
         Button btnAttack = new Button("⚔️ Attacca");
-        btnAttack.setStyle("-fx-background-color: #f38ba8; -fx-font-weight: bold;");
+        btnAttack.setStyle("-fx-background-color: #f38ba8; -fx-font-weight: bold; -fx-cursor: hand;");
         btnAttack.setPrefWidth(190);
 
         Button btnDefend = new Button("🛡️ Difenditi (-50% Danno)");
-        btnDefend.setStyle("-fx-background-color: #89b4fa; -fx-font-weight: bold;");
+        btnDefend.setStyle("-fx-background-color: #89b4fa; -fx-font-weight: bold; -fx-cursor: hand;");
         btnDefend.setPrefWidth(190);
+
+        // Flag per sapere se lo scontro è terminato con la sconfitta del player
+        final boolean[] isGameOver = {false};
+
+        Runnable refreshBattleUI = () -> {
+            int pHp = Math.max(0, player.getHealth());
+            playerHpBar.setProgress((double) pHp / player.getMaxHealth());
+            playerHpLabel.setText("PV: " + pHp + " / " + player.getMaxHealth());
+
+            int mHp = Math.max(0, monster.getHealth());
+            monsterHpBar.setProgress((double) mHp / monster.getMaxHealth());
+            monsterHpLabel.setText("PV: " + mHp + " / " + monster.getMaxHealth());
+
+            updateUI();
+        };
+
+        // Timer automatico: ogni 1.5 secondi il mostro attacca se non fai nulla
+        Timeline autoAttackTimer = new Timeline();
+        autoAttackTimer.getKeyFrames().add(new KeyFrame(Duration.seconds(1.5), e -> {
+            String res = controller.monsterTurn();
+            refreshBattleUI.run();
+
+            if ("GAME_OVER".equals(res) || !player.isAlive()) {
+                isGameOver[0] = true;
+                autoAttackTimer.stop();
+                battleStage.close();
+            } else {
+                battleLog.setText(res);
+            }
+        }));
+        autoAttackTimer.setCycleCount(Timeline.INDEFINITE);
+        autoAttackTimer.play();
 
         btnAttack.setOnAction(e -> {
             String res = controller.playerAttack();
+            refreshBattleUI.run();
+
             if (res.contains("sconfitto")) {
+                autoAttackTimer.stop();
                 logArea.appendText(res + "\n");
                 battleStage.close();
-            } else if ("GAME_OVER".equals(res)) {
+            } else if ("GAME_OVER".equals(res) || !player.isAlive()) {
+                isGameOver[0] = true;
+                autoAttackTimer.stop();
                 battleStage.close();
-                showEndGameDialog(false);
             } else {
                 battleLog.setText(res);
-                battleInfo.setText(monster.getName() + " PV: " + Math.max(0, monster.getHealth()));
             }
-            updateUI();
         });
 
         btnDefend.setOnAction(e -> {
             String res = controller.playerDefend();
-            if ("GAME_OVER".equals(res)) {
+            refreshBattleUI.run();
+
+            if ("GAME_OVER".equals(res) || !player.isAlive()) {
+                isGameOver[0] = true;
+                autoAttackTimer.stop();
                 battleStage.close();
-                showEndGameDialog(false);
             } else {
                 battleLog.setText(res);
             }
-            updateUI();
         });
 
-        layout.getChildren().addAll(battleInfo, battleLog, btnAttack, btnDefend);
-        Scene battleScene = new Scene(layout, 380, 260);
+        battleStage.setOnCloseRequest(e -> e.consume());
+
+        layout.getChildren().addAll(fightersBox, battleLog, btnAttack, btnDefend);
+        Scene battleScene = new Scene(layout, 430, 340);
         battleStage.setScene(battleScene);
         battleStage.showAndWait();
+        autoAttackTimer.stop();
+
+        // Subito dopo la chiusura pulita della finestra di battaglia, mostra la schermata di sconfitta
+        if (isGameOver[0] || !player.isAlive()) {
+            Platform.runLater(() -> showEndGameDialog(false));
+        }
     }
 
     private void showEndGameDialog(boolean victory) {
@@ -235,9 +317,9 @@ public class App extends Application {
         alert.setHeaderText(victory ? "Complimenti! Hai raggiunto la fine del Dungeon!" : "Sei stato sconfitto nel Dungeon!");
         alert.setContentText("Punteggio registrato in Classifica! Cosa vuoi fare?");
 
-        ButtonType btnReplay = new ButtonType("🔄 Rigioca");
-        ButtonType btnMenu = new ButtonType("🏆 Classifica / Menu");
-        ButtonType btnExit = new ButtonType("🚪 Esci", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType btnReplay = new ButtonType("🔄 Rigioca", ButtonBar.ButtonData.OTHER);
+        ButtonType btnMenu = new ButtonType("🏆 Classifica / Menu", ButtonBar.ButtonData.OTHER);
+        ButtonType btnExit = new ButtonType("🚪 Esci", ButtonBar.ButtonData.OTHER);
 
         alert.getButtonTypes().setAll(btnReplay, btnMenu, btnExit);
 

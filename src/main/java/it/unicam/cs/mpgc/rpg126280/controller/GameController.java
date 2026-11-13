@@ -130,7 +130,7 @@ public class GameController {
         return monsterTurn();
     }
 
-    private String monsterTurn() {
+    public String monsterTurn() {
         int damage = currentEncounter.getAttackPower();
         if (isDefending) {
             damage = Math.max(1, damage / 2);
