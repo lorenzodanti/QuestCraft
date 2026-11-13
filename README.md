@@ -16,7 +16,7 @@ Anno accademico: 2025/26 - Università di Camerino
 
 ---
 - ✅ **Mappa esplorabile (5x5):** Mappa a griglia con posizionamento dinamico di nemici, casella di partenza (in alto a sinistra) e obiettivo finale (in basso a destra).
-- ✅ **Sistema di combattimento dedicato:** Finestra popup scontro a turni con opzioni per **Attaccare** o **Difendersi** (-50% di danno subito).
+- ✅ **Sistema di combattimento dedicato:** Sistema di combattimento in tempo reale: Finestra dedicata con barre della vita dinamiche per giocatore e mostro, attacchi automatici del nemico a intervalli regolari e opzioni per Attaccare o Difendersi (-50% di danno subito).
 - ✅ **Gestione risorse (Inventario):** Utilizzo limitato e consumabile di pozioni di cura (+25 PV) integrate direttamente tramite la classe `Inventory`.
 - ✅ **Progressione eroe:** Guadagno di Punti Esperienza (EXP) e aumento di livello dell'eroe dopo ogni vittoria contro un nemico.
 - ✅ **Classifica e Persistenza JSON:** Salvataggio e caricamento automatizzato dello stato di gioco (`savegame.json`) e classifica storica (`leaderboard.json`) che traccia i punteggi, i mostri sconfitti e il livello raggiunto.
